@@ -1,59 +1,68 @@
-# 📄 Telemetry Log Formatı
+# Telemetry Log Format
 
-Bu proje tarafından üretilen log dosyaları CSV formatındadır. Her satır bir telemetri örneğini temsil eder.
+Bu proje tarafından üretilen log dosyaları CSV formatındadır. Her satır, uçuş telemetrisinden tek bir örneği temsil eder.
 
-Aşağıdaki kolonlar bulunur:
+## Kolonlar
 
-| Kolon Adı            | Açıklama                         |
-|----------------------|----------------------------------|
-| `timestamp`          | UTC zaman damgası                |
-| `altitude_m`         | İrtifa (metre)                   |
-| `roll_deg`           | Roll açısı                       |
-| `pitch_deg`          | Pitch açısı                      |
-| `yaw_deg`            | Yaw açısı                        |
-| `battery_remaining`  | Pil yüzdesi                      |
-| `gps_fix`            | 1 = Fix var, 0 = Yok             |
-| `gps_satellites`     | Uydu sayısı                      |
-| `rssi`               | Bağlantı sinyal seviyesi (dBm)   |
-| `flight_mode`        | Uçuş modu                        |
+| Kolon Adı                | Açıklama                               |
+|--------------------------|----------------------------------------|
+| `timestamp_utc`          | ISO8601 UTC zaman damgası              |
+| `lat` / `lon`            | Enlem / boylam (derece)                |
+| `altitude_m`             | İrtifa (metre, MSL)                    |
+| `ground_speed_mps`       | Yatay hız (m/s)                        |
+| `vertical_speed_mps`     | Düşey hız, tırmanış(+) / süzülüş(-)    |
+| `roll_deg` / `pitch_deg` | Tutum açıları (derece)                 |
+| `yaw_deg`                | Baş açısı (derece)                     |
+| `flight_mode`            | Otomatik pilot modu                    |
+| `armed`                  | Motor kilidi (1 = açık, 0 = kapalı)    |
+| `battery_voltage`        | Pil gerilimi (V)                       |
+| `battery_remaining_pct`  | Pil yüzdesi (%)                        |
+| `gps_fix`                | 1 = Fix var, 0 = Yok                   |
+| `satellites`             | Kullanılan uydu sayısı                 |
+| `link_rssi`              | Veri linki RSSI (dBm)                  |
 
+## RSSI Değerlerini Yorumlama
 
-## 📌 Örnek Log Satırı
+-40 dBm : Çok güçlü, saha testlerinde ideal seviye  
+-70 dBm : Orta, çoğu görev için kabul edilebilir ancak marj sınırlı  
+-90 dBm : Kritik, bağlantı kopma riski yüksek, failsafe tetiklenebilir
 
-2025-12-06T17:31:40.123456,45.2,1.3,-0.7,180.4,98,1,10,-46,AUTO
+## Örnek Log Satırı
 
+2025-12-06T17:31:40.123456,37.618820,-122.375400,118.5,12.3,0.4,3.2,1.1,182.5,AUTO,1,15.8,87.5,1,13,-46.7
 
-
-## 🧱 Tasarım İlkeleri
+## Tasarım İlkeleri
 
 Bu format:
 
 - İnsan tarafından okunabilir
-- Excel, MATLAB, Pandas ile direkt açılabilir
+- Excel, MATLAB, Pandas ile doğrudan açılabilir
 - Genişletilebilir  
-  (örn. ivmeölçer verileri, motor RPM, RC komutları eklemeye uygun)
+  (örn. ivmeölçer, motor RPM, RC komutları gibi alanlar eklemeye uygun)
 
-
-## 📦 Veri Tipi Eşlemesi
+## Veri Tipi Eşlemesi
 
 | Alan                           | Python Tipi          |
 |--------------------------------|----------------------|
-| timestamp                      | `datetime`           |
+| timestamp_utc                  | `datetime`           |
+| lat / lon                      | `float`              |
 | altitude_m                     | `float`              |
+| ground_speed_mps               | `float`              |
+| vertical_speed_mps             | `float`              |
 | roll_deg / pitch_deg / yaw_deg | `float`              |
-| battery_remaining              | `float`              |
-| gps_fix                        | `bool`               |
-| gps_satellites                 | `int`                |
-| rssi                           | `float`              |
 | flight_mode                    | `FlightMode` enum    |
-
+| armed                          | `bool`               |
+| battery_voltage                | `float`              |
+| battery_remaining_pct          | `float`              |
+| gps_fix                        | `bool`               |
+| satellites                     | `int`                |
+| link_rssi                      | `float`              |
 
 ## Format Kısıtları
 
-- CSV virgül ayracına göre parse edilir  
+- CSV virgül ayırıcı ile parse edilir  
 - Bozuk satırlar parser tarafından güvenli şekilde atlanır  
 - Zaman damgası ISO8601 formatındadır  
 - Tüm sayısal alanlar SI birimleriyle gelir
-
 
 Bu doküman hem simülasyon çıktısını inceleyen mühendislere hem de gerçek sensör verilerinden bu formata dönüştürme yapmak isteyenlere referans niteliğindedir.

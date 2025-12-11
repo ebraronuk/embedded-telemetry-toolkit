@@ -49,6 +49,10 @@ class TelemetryAnalyzer:
             volt_rate = (prev.battery_voltage - curr.battery_voltage) / dt
             if pct_rate > 1.0 or volt_rate > 0.2:
                 findings.append(f"Batarya hizli tuketim: {curr.timestamp_utc.isoformat()}")
+            # Tek adimda ani voltaj dususunu yakala
+            volt_drop = prev.battery_voltage - curr.battery_voltage
+            if volt_drop > 0.3:
+                findings.append(f"Ani voltaj dususu >0.3V: {curr.timestamp_utc.isoformat()}")
         for s in samples:
             if s.battery_remaining_pct < 20.0:
                 findings.append(f"Batarya kritik seviye <20%: {s.timestamp_utc.isoformat()}")
