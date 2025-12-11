@@ -101,8 +101,8 @@ def _print_anomalies(report: dict) -> None:
         st.divider()
 
 
-def _run_pipeline(path: Path) -> None:
-    """Parse and analyze selected log."""
+def _run_pipeline(path: Path) -> bool:
+    """Parse and analyze selected log; return success flag."""
     parser = UAVTelemetryParser()
     samples = parser.parse_file(path)
     if not samples:
@@ -110,7 +110,7 @@ def _run_pipeline(path: Path) -> None:
         st.session_state["df"] = None
         st.session_state["report"] = None
         st.session_state["selected_path"] = None
-        return
+        return False
 
     df = _samples_to_frame(samples)
     analyzer = TelemetryAnalyzer()
@@ -120,6 +120,7 @@ def _run_pipeline(path: Path) -> None:
     st.session_state["df"] = df
     st.session_state["report"] = report
     st.session_state["selected_path"] = path
+    return True
 
 
 def main() -> None:
@@ -148,14 +149,17 @@ def main() -> None:
             simulator = UAVTelemetrySimulator()
             simulator.simulate(duration_s=duration, frequency_hz=frequency, output_path=output_path)
             _run_pipeline(output_path)
-            st.success(f"Simülasyon tamamlandı: {output_path}")
+            st.success(f"Simülasyon tamamlandı: {output_path}")  # Kısa başarı uyarısı
 
         if uploaded is not None:
             # Yüklenen dosyayı sakla
             tmp_path = log_dir / f"upload_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.log"
             tmp_path.write_bytes(uploaded.read())
-            _run_pipeline(tmp_path)
-            st.info(f"Yüklenen dosya işlendi: {tmp_path}")
+            ok = _run_pipeline(tmp_path)
+            if ok:
+                st.info(f"Yüklenen dosya işlendi: {tmp_path}")
+            else:
+                st.error("Dosya bozuk veya beklenen CSV şemasında değil.")  # Kısa uyarı, dosya hatalı
 
     with tab_analysis:
         st.subheader("Analiz Özeti")
