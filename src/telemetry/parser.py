@@ -12,12 +12,13 @@ class UAVTelemetryParser:
 
     def parse_line(self, line: str) -> Optional[TelemetrySample]:
         """Parse a single CSV line; return None on errors."""
-        # Bos veya yorum satirini atla
-        if not line.strip() or line.lstrip().startswith("#"):
+        cleaned = line.strip()
+        # Bos, sadece virgullu veya yorum satirini atla
+        if not cleaned or cleaned.strip(",") == "" or cleaned.lstrip().startswith("#"):
             return None
 
         try:
-            row = next(csv.reader([line.strip()]))
+            row = next(csv.reader([cleaned]))
         except Exception:
             return None
 
@@ -34,11 +35,15 @@ class UAVTelemetryParser:
             roll_deg = float(row[6])
             pitch_deg = float(row[7])
             yaw_deg = float(row[8])
-            flight_mode = FlightMode(row[9])
+            mode_raw = row[9].strip().upper()
+            flight_mode = FlightMode(mode_raw)
             armed = bool(int(row[10]))
             battery_voltage = float(row[11])
             battery_remaining_pct = float(row[12])
-            gps_fix = bool(int(row[13]))
+            gps_raw = row[13].strip()
+            if gps_raw not in ("0", "1"):
+                raise ValueError("gps_fix out of range")
+            gps_fix = gps_raw == "1"
             satellites = int(row[14])
             link_rssi = float(row[15])
         except (ValueError, IndexError):

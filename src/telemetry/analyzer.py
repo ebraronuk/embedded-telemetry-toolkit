@@ -73,7 +73,7 @@ class TelemetryAnalyzer:
         findings: List[str] = []
         for s in samples:
             if s.link_rssi < -90.0:
-                findings.append(f"RSSI kritik (<-90 dBm): {s.timestamp_utc.isoformat()}")
+                findings.append(f"RSSI kritik (<-90 dBm): {s.timestamp_utc.isoformat()} (yer istasyonu link zayif)")
         if samples:
             delta = samples[-1].link_rssi - samples[0].link_rssi
             if delta < -5.0:
@@ -86,12 +86,12 @@ class TelemetryAnalyzer:
         rates = self._compute_attitude_rates(samples)
         for s, rate in rates:
             if abs(rate.roll_rate) > 30.0 or abs(rate.pitch_rate) > 30.0:
-                findings.append(f"Tutum hizi limit disi: {s.timestamp_utc.isoformat()}")
-            if abs(rate.yaw_rate) > 45.0:
-                findings.append(f"Yaw ani degisim >45 deg/s: {s.timestamp_utc.isoformat()}")
+                findings.append(f"Tutum hizi limit disi: {s.timestamp_utc.isoformat()} (agresif manevra)")
+            if abs(rate.yaw_rate) > 40.0:
+                findings.append(f"Yaw ani degisim >40 deg/s: {s.timestamp_utc.isoformat()}")
         for s in samples:
             if abs(s.roll_deg) > 35.0 or abs(s.pitch_deg) > 35.0:
-                findings.append(f"Roll/Pitch >35 deg: {s.timestamp_utc.isoformat()}")
+                findings.append(f"Roll/Pitch >35 deg: {s.timestamp_utc.isoformat()} (tutum limit asildi)")
         return findings
 
     def _compute_attitude_rates(self, samples: List[TelemetrySample]) -> List[Tuple[TelemetrySample, _ChangeRate]]:
