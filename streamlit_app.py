@@ -19,6 +19,8 @@ from telemetry.parser import UAVTelemetryParser  # type: ignore
 from telemetry.simulator import UAVTelemetrySimulator  # type: ignore
 from telemetry.schemas import TelemetrySample  # type: ignore
 
+SEVERITY_COLORS = {"low": "#2ca02c", "medium": "#ff7f0e", "high": "#d62728"}
+
 
 def _init_state() -> None:
     """Ensure shared state exists."""
@@ -48,6 +50,30 @@ def _samples_to_frame(samples: List[TelemetrySample]) -> pd.DataFrame:
             }
             for s in samples
         ]
+    )
+
+
+def _render_severity(report: dict) -> None:
+    """Show severity badge."""
+    severity = str(report.get("severity", "")).lower()
+    if severity not in SEVERITY_COLORS:
+        return
+
+    color = SEVERITY_COLORS[severity]
+    # Kisa renkli kutu
+    st.markdown(
+        f"""
+        <div style="
+            padding: 0.85rem 1rem;
+            border-radius: 10px;
+            background: {color};
+            color: white;
+            font-weight: 700;
+            font-size: 1.05rem;">
+            Genel ciddiyet: {severity.upper()}
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
 
@@ -164,11 +190,14 @@ def main() -> None:
     with tab_analysis:
         st.subheader("Analiz Özeti")
         if st.session_state["df"] is None:
+            # Kısa yönlendirme
+            st.info("Analiz sonuçlarını görmek için önce bir log yükleyin veya simülasyon çalıştırın.")
             st.warning("Önce simülasyon başlatın veya bir log dosyası yükleyin.")
         else:
             df = st.session_state["df"]
             report = st.session_state["report"]
             path = st.session_state["selected_path"]
+            _render_severity(report)
             st.write(f"Kaynak dosya: `{path}`")
             st.write(f"Kayıt sayısı: {len(df)}")
             st.divider()
