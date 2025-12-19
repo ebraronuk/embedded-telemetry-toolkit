@@ -1,6 +1,6 @@
 """UAV telemetry log parser."""
 import csv
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional, Union
 
@@ -13,7 +13,7 @@ class UAVTelemetryParser:
     def parse_line(self, line: str) -> Optional[TelemetrySample]:
         """Parse a single CSV line; return None on errors."""
         cleaned = line.strip()
-        # Bos, sadece virgullu veya yorum satirini atla
+        # Bos satirlari, yalnizca virgullu satirlari ve yorumlari atla
         if not cleaned or cleaned.strip(",") == "" or cleaned.lstrip().startswith("#"):
             return None
 
@@ -27,6 +27,11 @@ class UAVTelemetryParser:
 
         try:
             timestamp = datetime.fromisoformat(row[0])
+            if timestamp.tzinfo is None:
+                timestamp = timestamp.replace(tzinfo=timezone.utc)
+            else:
+                timestamp = timestamp.astimezone(timezone.utc)
+
             lat = float(row[1])
             lon = float(row[2])
             altitude_m = float(row[3])

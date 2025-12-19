@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from src.telemetry.analyzer import TelemetryAnalyzer
 from src.telemetry.schemas import FlightMode, TelemetrySample
@@ -9,7 +9,7 @@ def test_analyzer_detects_low_battery():
 
     samples = [
         TelemetrySample(
-            timestamp_utc=datetime.utcnow(),
+            timestamp_utc=datetime.now(timezone.utc),
             lat=0.0,
             lon=0.0,
             altitude_m=10.0,

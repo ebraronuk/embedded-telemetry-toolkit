@@ -1,6 +1,6 @@
 """Streamlit dashboard for UAV telemetry."""
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import List
 
@@ -171,7 +171,7 @@ def main() -> None:
 
         if start_sim:
             # Simulasyon üret
-            output_path = log_dir / f"sim_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.log"
+            output_path = log_dir / f"sim_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.log"
             simulator = UAVTelemetrySimulator()
             simulator.simulate(duration_s=duration, frequency_hz=frequency, output_path=output_path)
             _run_pipeline(output_path)
@@ -179,7 +179,7 @@ def main() -> None:
 
         if uploaded is not None:
             # Yüklenen dosyayı sakla
-            tmp_path = log_dir / f"upload_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.log"
+            tmp_path = log_dir / f"upload_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.log"
             tmp_path.write_bytes(uploaded.read())
             ok = _run_pipeline(tmp_path)
             if ok:

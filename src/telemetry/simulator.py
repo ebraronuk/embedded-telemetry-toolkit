@@ -2,7 +2,7 @@
 import csv
 import math
 import random
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from .schemas import FlightMode, TelemetrySample
@@ -36,7 +36,7 @@ class UAVTelemetrySimulator:
         self.gps_fix = True
         self.satellites = 14
         self.link_rssi = start_link_rssi
-        self._start_time = datetime.utcnow()
+        self._start_time = datetime.now(timezone.utc)
 
     def simulate(self, duration_s: int, frequency_hz: float, output_path: Path) -> None:
         """Run simulation and write CSV log."""
