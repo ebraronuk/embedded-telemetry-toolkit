@@ -1,4 +1,5 @@
 # 🛰️ **Embedded Telemetry Toolkit**
+[![Tests](https://github.com/ebrar/embedded-telemetry-toolkit/actions/workflows/tests.yml/badge.svg)](https://github.com/ebrar/embedded-telemetry-toolkit/actions/workflows/tests.yml)
 ### *UAV Telemetri Simülasyonu, Ayrıştırması ve Uçuş Sonrası Analizi için Modüler Python Kütüphanesi*
 
 Bu çalışma, insansız hava araçlarından elde edilen telemetri verilerinin **üretimi, ayrıştırılması ve analizine yönelik uçtan uca bir test altyapısı** oluşturmak amacıyla geliştirilmiştir.  
@@ -267,11 +268,6 @@ Bu proje, bu sürecin tamamına hakim olmayı hedefleyen sade bir teknik egzersi
 
 ---
 
-#  **Lisans**
-
-MIT Lisansı.
-
----
 
 #  **Son Not**
 
