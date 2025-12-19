@@ -72,6 +72,13 @@ pip install -r requirements.txt
 
 Proje Python 3.10+ ile test edilmiştir.
 
+# Geliştirme / Test
+
+pip install -r requirements.txt
+pip install -r requirements-dev.txt
+python -m pytest -q
+python -m streamlit run streamlit_app.py  # PATH ayari gerekmez
+
 ---
 
 # 🛫 **Uçuş Telemetri Simülasyonu (CLI)**
