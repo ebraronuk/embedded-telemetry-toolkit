@@ -19,6 +19,7 @@ class UAVTelemetrySimulator:
         start_battery_voltage: float = 16.8,
         start_battery_remaining_pct: float = 100.0,
         start_link_rssi: float = -45.0,
+        drop_rate: float = 0.0,
     ) -> None:
         # Başlangıç durumu
         self.lat = start_lat
@@ -37,6 +38,8 @@ class UAVTelemetrySimulator:
         self.satellites = 14
         self.link_rssi = start_link_rssi
         self._start_time = datetime.now(timezone.utc)
+        # Telemetride ara sira paket kaybi gercek; drop_rate 0-0.2 arasinda tutulur
+        self.drop_rate = max(0.0, min(drop_rate, 0.2))
 
     def simulate(self, duration_s: int, frequency_hz: float, output_path: Path) -> None:
         """Run simulation and write CSV log."""
@@ -91,6 +94,9 @@ class UAVTelemetrySimulator:
                     armed=self.armed,
                     link_rssi=self.link_rssi,
                 )
+                # Belirlenen oranda paketi yazma (sahada telemetri ara sira kaybolur)
+                if random.random() < self.drop_rate:
+                    continue
                 writer.writerow(
                     [
                         sample.timestamp_utc.isoformat(),
