@@ -44,15 +44,15 @@ class TelemetryAnalyzer:
         findings: List[str] = []
         for prev, curr in zip(samples, samples[1:]):
             dt = (curr.timestamp_utc - prev.timestamp_utc).total_seconds() or 1e-6
-            # Hiz hesapla
+            # Sahada asiri hassasiyet yalanci alarmlari sisirir, esikleri yumusatildi
             pct_rate = (prev.battery_remaining_pct - curr.battery_remaining_pct) / dt
             volt_rate = (prev.battery_voltage - curr.battery_voltage) / dt
-            if pct_rate > 1.0 or volt_rate > 0.2:
+            if pct_rate > 1.2 or volt_rate > 0.25:
                 findings.append(f"Batarya hizli tuketim: {curr.timestamp_utc.isoformat()}")
-            # Tek adimda ani voltaj dususunu yakala
+            # Tek adimda ani voltaj dususunu yakala, tek spike'i atla
             volt_drop = prev.battery_voltage - curr.battery_voltage
-            if volt_drop > 0.3:
-                findings.append(f"Ani voltaj dususu >0.3V: {curr.timestamp_utc.isoformat()}")
+            if volt_drop > 0.4 and prev.battery_voltage > 12.5:
+                findings.append(f"Ani voltaj dususu >0.4V: {curr.timestamp_utc.isoformat()}")
         for s in samples:
             if s.battery_remaining_pct < 20.0:
                 findings.append(f"Batarya kritik seviye <20%: {s.timestamp_utc.isoformat()}")
@@ -61,22 +61,39 @@ class TelemetryAnalyzer:
     def _detect_gps(self, samples: List[TelemetrySample]) -> List[str]:
         """Flag GPS loss or weak fix."""
         findings: List[str] = []
+        loss_streak = 0
+        sat_low_streak = 0
         for s in samples:
             if not s.gps_fix:
+                loss_streak += 1
+            else:
+                loss_streak = 0
+            if s.gps_fix and s.satellites < 5:
+                sat_low_streak += 1
+            else:
+                sat_low_streak = 0
+            # Kisa kesinti ve tek uydu diplerini es gec
+            if loss_streak == 2:
                 findings.append(f"GPS fix yok: {s.timestamp_utc.isoformat()}")
-            elif s.satellites < 6:
-                findings.append(f"Zayif GPS (<6 uydu): {s.timestamp_utc.isoformat()}")
+            if sat_low_streak == 2:
+                findings.append(f"Zayif GPS (<5 uydu): {s.timestamp_utc.isoformat()}")
         return findings
 
     def _detect_rssi(self, samples: List[TelemetrySample]) -> List[str]:
         """Flag link quality issues."""
         findings: List[str] = []
+        low_streak = 0
         for s in samples:
-            if s.link_rssi < -90.0:
-                findings.append(f"RSSI kritik (<-90 dBm): {s.timestamp_utc.isoformat()} (yer istasyonu link zayif)")
-        if samples:
+            if s.link_rssi < -92.0:
+                low_streak += 1
+            else:
+                low_streak = 0
+            # Tek olcumu alarm yapma, iki ardil dususte bildir
+            if low_streak == 2:
+                findings.append(f"RSSI kritik (<-92 dBm): {s.timestamp_utc.isoformat()} (yer istasyonu link zayif)")
+        if len(samples) >= 3:
             delta = samples[-1].link_rssi - samples[0].link_rssi
-            if delta < -5.0:
+            if delta < -7.0:
                 findings.append(f"RSSI dusus trendi: {delta:.1f} dB")
         return findings
 
@@ -85,13 +102,14 @@ class TelemetryAnalyzer:
         findings: List[str] = []
         rates = self._compute_attitude_rates(samples)
         for s, rate in rates:
-            if abs(rate.roll_rate) > 30.0 or abs(rate.pitch_rate) > 30.0:
+            # Tek adimlik sertlikleri filtrelemek icin esikler yumusatildi
+            if abs(rate.roll_rate) > 35.0 or abs(rate.pitch_rate) > 35.0:
                 findings.append(f"Tutum hizi limit disi: {s.timestamp_utc.isoformat()} (agresif manevra)")
-            if abs(rate.yaw_rate) > 40.0:
-                findings.append(f"Yaw ani degisim >40 deg/s: {s.timestamp_utc.isoformat()}")
+            if abs(rate.yaw_rate) > 55.0:
+                findings.append(f"Yaw ani degisim >55 deg/s: {s.timestamp_utc.isoformat()}")
         for s in samples:
-            if abs(s.roll_deg) > 35.0 or abs(s.pitch_deg) > 35.0:
-                findings.append(f"Roll/Pitch >35 deg: {s.timestamp_utc.isoformat()} (tutum limit asildi)")
+            if abs(s.roll_deg) > 40.0 or abs(s.pitch_deg) > 40.0:
+                findings.append(f"Roll/Pitch >40 deg: {s.timestamp_utc.isoformat()} (tutum limit asildi)")
         return findings
 
     def _compute_attitude_rates(self, samples: List[TelemetrySample]) -> List[Tuple[TelemetrySample, _ChangeRate]]:

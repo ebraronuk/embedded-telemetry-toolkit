@@ -26,6 +26,9 @@ class UAVTelemetryParser:
             return None
 
         try:
+            # Sahada eksik/bozuk satirlar sessiz atlanir; parser akisini durdurmamak oncelikli
+            if any(cell.strip() == "" for cell in row):
+                return None
             timestamp = datetime.fromisoformat(row[0])
             if timestamp.tzinfo is None:
                 timestamp = timestamp.replace(tzinfo=timezone.utc)
@@ -41,6 +44,8 @@ class UAVTelemetryParser:
             pitch_deg = float(row[7])
             yaw_deg = float(row[8])
             mode_raw = row[9].strip().upper()
+            if mode_raw not in FlightMode.__members__:
+                return None
             flight_mode = FlightMode(mode_raw)
             armed = bool(int(row[10]))
             battery_voltage = float(row[11])
