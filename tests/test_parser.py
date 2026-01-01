@@ -48,3 +48,29 @@ def test_parser_skips_missing_rows(tmp_path):
 
     assert samples, "Paket kaybi olsa da gecerli satirlar parse edilmedi"
     assert all(s.timestamp_utc.tzinfo is not None for s in samples), "Timestamp UTC bilgisi eksik"
+
+
+def test_parser_returns_stats(tmp_path):
+    parser = UAVTelemetryParser()
+    log_path = tmp_path / "stats.log"
+    log_path.write_text(
+        "\n".join(
+            [
+                "timestamp_utc,lat,lon,altitude_m,ground_speed_mps,vertical_speed_mps,roll_deg,pitch_deg,yaw_deg,flight_mode,armed,battery_voltage,battery_remaining_pct,gps_fix,satellites,link_rssi",
+                "",  # bos satir
+                "# comment line",
+                "2025-12-06T17:31:35,37.618805,-122.375416,30.0,5.0,0.1,0.5,0.2,90.0,MANUAL,1,16.5,95.0,1,14,-45.0",
+                "2025-12-06T17:31:36,37.618810,-122.375410,32.0,6.0,0.3,0.7,0.3,90.1,UNKNOWN,1,16.4,94.8,1,14,-45.2",  # invalid mode
+                "2025-12-06T17:31:37,37.618815,-122.375405,34.0,6.5,0.2,0.6,0.2,90.3,AUTO,1,16.3,94.6,false,14,-45.5",
+            ]
+        )
+    )
+
+    # Yari yolda hatali satir olsa bile parser toplu stats donmeli
+    samples, stats = parser.parse_file(log_path, return_stats=True)
+
+    assert samples, "Gecerli satirlar parse edilmedi"
+    assert stats["parsed"] == len(samples)
+    assert stats["read"] == 6
+    assert stats["skipped"] == 3  # baslik, bos ve comment satiri
+    assert stats["invalid"] == 1

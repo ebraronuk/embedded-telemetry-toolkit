@@ -2,7 +2,7 @@
 import csv
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 from .schemas import FlightMode, TelemetrySample
 
@@ -44,16 +44,20 @@ class UAVTelemetryParser:
             pitch_deg = float(row[7])
             yaw_deg = float(row[8])
             mode_raw = row[9].strip().upper()
-            if mode_raw not in FlightMode.__members__:
+            try:
+                flight_mode = FlightMode(mode_raw)
+            except ValueError:
                 return None
-            flight_mode = FlightMode(mode_raw)
             armed = bool(int(row[10]))
             battery_voltage = float(row[11])
             battery_remaining_pct = float(row[12])
-            gps_raw = row[13].strip()
-            if gps_raw not in ("0", "1"):
-                raise ValueError("gps_fix out of range")
-            gps_fix = gps_raw == "1"
+            gps_raw = row[13].strip().lower()
+            if gps_raw in ("1", "true"):
+                gps_fix = True
+            elif gps_raw in ("0", "false"):
+                gps_fix = False
+            else:
+                return None
             satellites = int(row[14])
             link_rssi = float(row[15])
         except (ValueError, IndexError):
@@ -78,18 +82,33 @@ class UAVTelemetryParser:
             link_rssi=link_rssi,
         )
 
-    def parse_file(self, path: Union[str, Path]) -> List[TelemetrySample]:
+    def parse_file(self, path: Union[str, Path], return_stats: bool = False) -> Union[List[TelemetrySample], Tuple[List[TelemetrySample], Dict[str, int]]]:
         """Read a telemetry log file and parse all valid lines."""
         if isinstance(path, str):
             path = Path(path)
+        stats: Dict[str, int] = {"read": 0, "parsed": 0, "skipped": 0, "invalid": 0}
         samples: List[TelemetrySample] = []
         with path.open("r", newline="") as f:
             reader = enumerate(f)
             for idx, line in reader:
-                # Baslik satirini atla
-                if idx == 0 and line.lower().startswith("timestamp_utc"):
+                stats["read"] += 1
+                stripped = line.strip()
+                # Baslik, bos veya yorum satirini atla
+                if idx == 0 and stripped.lower().startswith("timestamp_utc"):
+                    stats["skipped"] += 1
+                    continue
+                if not stripped:
+                    stats["skipped"] += 1
+                    continue
+                if stripped.startswith("#"):
+                    stats["skipped"] += 1
                     continue
                 sample = self.parse_line(line)
                 if sample is not None:
                     samples.append(sample)
+                    stats["parsed"] += 1
+                else:
+                    stats["invalid"] += 1
+        if return_stats:
+            return samples, stats
         return samples
