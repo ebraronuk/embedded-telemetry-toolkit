@@ -19,9 +19,10 @@ class UAVTelemetrySimulator:
         start_battery_voltage: float = 16.8,
         start_battery_remaining_pct: float = 100.0,
         start_link_rssi: float = -45.0,
-        drop_rate: float = 0.0,
+        packet_loss_pct: float = 0.0,
+        timestamp_jitter_ms: int = 0,
     ) -> None:
-        # Başlangıç durumu
+        # Baslangic durumu
         self.lat = start_lat
         self.lon = start_lon
         self.altitude_m = start_altitude_m
@@ -38,8 +39,10 @@ class UAVTelemetrySimulator:
         self.satellites = 14
         self.link_rssi = start_link_rssi
         self._start_time = datetime.now(timezone.utc)
-        # Telemetride ara sira paket kaybi gercek; drop_rate 0-0.2 arasinda tutulur
-        self.drop_rate = max(0.0, min(drop_rate, 0.2))
+        # Telemetride ara sira paket kaybi gercek; yuzdeyi sinirla
+        self._loss_prob = max(0.0, min(packet_loss_pct, 100.0)) / 100.0
+        # Zaman damgasina ms jitter ekle, UTC korunur
+        self._jitter_ms = max(0, timestamp_jitter_ms)
 
     def simulate(self, duration_s: int, frequency_hz: float, output_path: Path) -> None:
         """Run simulation and write CSV log."""
@@ -73,7 +76,12 @@ class UAVTelemetrySimulator:
 
             for idx in range(total_steps):
                 progress = idx / max(total_steps - 1, 1)
-                timestamp = self._start_time + timedelta(seconds=idx * step_s)
+                base_ts = self._start_time + timedelta(seconds=idx * step_s)
+                if self._jitter_ms:
+                    jitter_s = random.uniform(-self._jitter_ms, self._jitter_ms) / 1000.0
+                    timestamp = base_ts + timedelta(seconds=jitter_s)
+                else:
+                    timestamp = base_ts
                 self.flight_mode = self._mode_for_progress(progress)
                 self._update_state(step_s, progress)
                 sample = TelemetrySample(
@@ -95,7 +103,7 @@ class UAVTelemetrySimulator:
                     link_rssi=self.link_rssi,
                 )
                 # Belirlenen oranda paketi yazma (sahada telemetri ara sira kaybolur)
-                if random.random() < self.drop_rate:
+                if random.random() < self._loss_prob:
                     continue
                 writer.writerow(
                     [

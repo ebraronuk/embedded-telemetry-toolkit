@@ -35,3 +35,20 @@ def test_simulated_log_parse_and_analyze(tmp_path):
     expected_keys = {"battery", "gps", "attitude", "rssi", "flight_mode", "severity"}
     assert expected_keys.issubset(report.keys()), "Rapor anahtarlari eksik"
     assert report["severity"] in {"low", "medium", "high"}, "Severity beklenenden farkli"
+
+
+def test_simulator_packet_loss(tmp_path):
+    out = tmp_path / "lossy.csv"
+    duration = 5
+    freq = 10
+
+    sim = UAVTelemetrySimulator(packet_loss_pct=20.0)
+    sim.simulate(duration_s=duration, frequency_hz=freq, output_path=out)
+
+    lines = out.read_text().splitlines()
+    total_expected = duration * freq
+    produced = max(len(lines) - 1, 0)
+
+    # Paket kaybi ile satir sayisi belirgin az olmali
+    assert produced > 0, "Tum paketler kaybolamaz"
+    assert produced < total_expected * 0.95, "Paket kaybi etkisi gorulmedi"
