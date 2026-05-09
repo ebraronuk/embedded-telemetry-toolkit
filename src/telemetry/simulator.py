@@ -13,8 +13,9 @@ class UAVTelemetrySimulator:
 
     def __init__(
         self,
-        start_lat: float = 37.618805,
-        start_lon: float = -122.375416,
+        # Varsayilan baslangic noktasi: Istanbul / Kilyos sahili (acik kiyi alani)
+        start_lat: float = 41.2486,
+        start_lon: float = 29.0420,
         start_altitude_m: float = 5.0,
         start_battery_voltage: float = 16.8,
         start_battery_remaining_pct: float = 100.0,

@@ -26,6 +26,15 @@ Proje, gerçek bir yer istasyonu mimarisine benzer şekilde dört çekirdek mod�
 - **Uçuş Sonrası Analiz Modülü (Analyzer)**  
   Batarya düşüşü, GPS kaybı, attitude bozuklukları, RSSI zayıflığı ve mod geçiş hataları gibi temel anormallikleri tespit eder.
 
+- **Uçuş Sağlık Karnesi (Flight Health Report)**  
+  Anomali bulgularından alt skorlar (power, gps, attitude, link, mode) ve 0–100 arası genel skor üretir; A–F harf notu döner.
+
+- **Harita Görselleştirme (KML / GeoJSON)**  
+  Uçuş izini Google Earth’te (KML) veya GeoJSON destekli her araçta açılabilen formatta dışa aktarır; anomali noktaları severity rengiyle pinlenir.
+
+- **Çoklu Uçuş Karşılaştırma (GUI)**  
+  İki log’u yan yana yükleyip skor kartlarını ve metrikleri (irtifa/batarya/RSSI) ortak zaman ekseninde karşılaştırır.
+
 ---
 
 #  **Sistem Mimarisi**
@@ -105,8 +114,28 @@ Varsayılan çıktı dosyası: logs/simulated_flight.log
 
     python -m src.cli.analyze logs/simulated_flight.log
 
+# 📋 **Uçuş Sağlık Karnesi & Harita İhracı (CLI)**
 
-Örnek çıktı:Batarya:
+Tek komutla rapor + harita çıktıları üretmek için:
+
+    # Markdown rapor (stdout)
+    python -m src.cli.report logs/simulated_flight.log
+
+    # HTML rapor + Google Earth için KML
+    python -m src.cli.report logs/simulated_flight.log --format html --output reports/flight.html --kml reports/flight.kml
+
+    # JSON rapor + GeoJSON (web haritalar için)
+    python -m src.cli.report logs/simulated_flight.log --format json --output reports/flight.json --geojson reports/flight.geojson
+
+Çıktı içeriği:
+- **Genel skor (0–100)** ve **harf notu (A–F)**
+- Alt skorlar: power, gps, attitude, link, mode (her biri 0–100)
+- Görev özeti (süre, max irtifa, min batarya, yol uzunluğu, …)
+- Kategori bazlı anomali listesi
+
+KML dosyası doğrudan **Google Earth Pro**’da açılabilir; uçuş izi çizgi olarak, anomali noktaları severity rengiyle (yeşil/turuncu/kırmızı) pinlenir.
+
+Örnek çıktı (analyze):Batarya:
 
 Yok
 GPS:
@@ -131,7 +160,7 @@ Yok
 
 Streamlit arayüzü, telemetriyi uçtan uca yönetmek için tasarlandı: sol panelden simülasyon süresi ve frekansı ayarlanır, tek tıkla yeni log üretilir veya hazır bir log yüklenir; ardından ayrıştırma, analiz ve grafikleme ardışığı otomatik çalışır. Amaç, saha öncesi hızlı deneme ve anomali görünürlüğü sağlamaktır.
 
-Kullanıcı akışı: **Simülasyon** sekmesinde CSV üretme/yükleme, **Analiz** sekmesinde özet ve anomali JSON’u, **Grafikler** sekmesinde zaman serileri, **Anomali Karnesi** sekmesinde kategori bazlı listeler. Pipeline net: **Simülasyon → Ayrıştırma → Analiz → Grafikler**.
+Kullanıcı akışı: **Simülasyon** sekmesinde CSV üretme/yükleme, **Analiz** sekmesinde özet ve anomali JSON’u, **Grafikler** sekmesinde zaman serileri, **Anomali Karnesi** sekmesinde kategori bazlı listeler, **Karne** sekmesinde uçuş sağlık skoru ve rapor/harita indirme butonları, **Harita** sekmesinde uçuş izi + anomali pinleri (pydeck), **Karşılaştırma** sekmesinde iki log’un skor + metrik karşılaştırması. Pipeline: **Simülasyon → Ayrıştırma → Analiz → Skorlama → Grafikler/Harita**.
 
 Önemli grafikler: (1) İrtifa vs Zaman — görev profili ve stabiliteyi okumak için. (2) Batarya Yüzdesi vs Zaman — iniş için enerji yeterliliğini görmek için. (3) RSSI vs Zaman — yer istasyonu link sağlığını takip etmek için.
 
@@ -260,11 +289,9 @@ Bu proje, bu sürecin tamamına hakim olmayı hedefleyen sade bir teknik egzersi
 # **Gelecek Geliştirmeler**
 
 - Gerçek IMU/GPS log’larıyla karşılaştırma testleri  
-- Basit görsel arayüz (Flask/Streamlit)  
-- Telemetri zaman serisi grafiklerinin üretilmesi  
 - ROS bag export  
-- Anomali sınıflandırma modeli  
-- Çoklu uçuş karşılaştırma desteği  
+- Anomali sınıflandırma modeli (ML tabanlı)  
+- MAVLink/UDP üzerinden canlı replay (yer istasyonu entegrasyonu)  
 
 ---
 

@@ -8,3 +8,24 @@ build/
 dist/
 .pytest_cache/
 .DS_Store
+
+# Runtime ciktilari (simulasyon log'lari, rapor/harita ihraclari)
+logs/
+!logs/.gitkeep
+reports/
+!reports/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+
+# Lint / test cache
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Streamlit yerel sirlar
+.streamlit/secrets.toml
+
+# OS
+Thumbs.db
